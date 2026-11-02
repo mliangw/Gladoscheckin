@@ -79,6 +79,25 @@ def load_config() -> Tuple[str, List[str], str]:
 
 
     logger.info(f"共加载了 {len(cookies_list)} 个 Cookie 用于签到。")
+    for cookie_index, cookie in enumerate(cookies_list, 1):
+        fields = {}
+        for part in cookie.split(";"):
+            name, separator, value = part.strip().partition("=")
+            if separator:
+                fields[name] = value.strip()
+        has_session = bool(fields.get("koa:sess"))
+        has_signature = bool(fields.get("koa:sess.sig"))
+        logger.info(
+            "账号 %d 的 Cookie 字段检查: koa:sess=%s, koa:sess.sig=%s",
+            cookie_index,
+            "已设置" if has_session else "缺失",
+            "已设置" if has_signature else "缺失",
+        )
+        if not has_session or not has_signature:
+            logger.warning(
+                "账号 %d 的 Cookie 不完整，请从浏览器请求头复制完整 Cookie 并更新 GLADOS_COOKIES。",
+                cookie_index,
+            )
     logger.info(f"当前 {ENV_PUSH_KEY} {'已设置' if push_key_env else '未设置'}。")
     logger.info(f"当前 {ENV_EXCHANGE_PLAN}: {exchange_plan}。")
 
