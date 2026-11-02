@@ -155,6 +155,7 @@ def checkin_and_process(cookie: str, exchange_plan: str) -> Tuple[str, str, str,
     else:
         remaining_days = "获取剩余天数失败 (HTTP请求失败)"
 
+    points_data = {}
     points_response = make_request(POINTS_URL, 'GET', HEADERS_TEMPLATE, cookies=cookie)
     if points_response:
         try:
@@ -230,10 +231,13 @@ def format_push_content(results: List[Dict[str, str]]) -> Tuple[str, str]:
 
 
 def main():
+    push_key = ""
+    exit_code = 0
     try:
         push_key, cookies_list, exchange_plan = load_config()
 
         if not cookies_list:
+            exit_code = 1
             logger.error("未找到有效的 Cookie，退出程序。")
             title, content = "# 未找到 cookies!", ""
         else:
@@ -249,11 +253,15 @@ def main():
                     'exchange': exchange
                 })
 
+            if any("失败" in result["status"] for result in results):
+                exit_code = 1
+
             title, content = format_push_content(results)
             logger.info(f"推送标题: {title}")
             logger.info(f"推送内容:\n{content}")
 
     except Exception as e:
+        exit_code = 1
         logger.error(f"主程序执行过程中发生未预期的错误: {e}")
         title, content = "# 脚本执行出错", str(e)
 
@@ -267,6 +275,8 @@ def main():
         except Exception as e:
             logger.error(f"发送推送通知失败: {e}")
 
+    return exit_code
+
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())
